@@ -1,0 +1,103 @@
+.stock-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.stock-header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.stock-fullname {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-top: 2px;
+}
+
+.stock-price-block {
+    text-align: right;
+}
+
+.stock-current-price {
+    font-family: var(--font-mono);
+    font-size: 2rem;
+    font-weight: 700;
+    display: block;
+}
+
+.stock-change {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* Indicator Toggles */
+.indicator-toggles {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.indicator-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-family: var(--font-main);
+}
+
+.indicator-pill:hover {
+    border-color: var(--border-color-hover);
+    color: var(--text-secondary);
+}
+
+.indicator-pill.active {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.indicator-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+/* RSI Bar Chart */
+.rsi-bar-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+    height: 100px;
+    padding: 0 4px;
+}
+
+.rsi-bar {
+    flex: 1;
+    min-width: 2px;
+    border-radius: 2px 2px 0 0;
+    transition: height var(--transition-fast);
+}
+
+.rsi-levels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 8px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}

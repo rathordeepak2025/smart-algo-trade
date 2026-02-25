@@ -1,0 +1,43 @@
+.symbol-badge {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--accent-primary);
+}
+
+.stock-name {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.sector-text {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.price-value {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.change-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    font-family: var(--font-mono);
+}
+
+.change-badge.up {
+    color: var(--green);
+    background: var(--green-soft);
+}
+
+.change-badge.down {
+    color: var(--red);
+    background: var(--red-soft);
+}

@@ -1,0 +1,79 @@
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.mover-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mover-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+}
+
+.mover-item:hover {
+    background: rgba(99, 102, 241, 0.06);
+}
+
+.mover-item>div:first-child {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mover-name {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.mover-stats {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mover-price {
+    font-family: var(--font-mono);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+/* Quick Action Cards */
+.quick-action {
+    cursor: pointer;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 32px 24px;
+    transition: all var(--transition-normal);
+}
+
+.quick-action:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.quick-action h4 {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.quick-action p {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}

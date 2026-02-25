@@ -1,0 +1,22 @@
+.backtest-config .stat-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.backtest-results .stat-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.backtest-results .stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 60px;
+    height: 60px;
+    background: var(--gradient-card);
+    border-radius: 0 0 0 60px;
+    opacity: 0.6;
+}
