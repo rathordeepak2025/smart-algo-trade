@@ -6,6 +6,7 @@ import StockDetail from './pages/StockDetail';
 import Portfolio from './pages/Portfolio';
 import Strategies from './pages/Strategies';
 import Backtest from './pages/Backtest';
+import StockFetcher from './pages/StockFetcher';
 import './index.css';
 
 export default function App() {
@@ -21,6 +22,7 @@ export default function App() {
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/strategies" element={<Strategies />} />
             <Route path="/backtest" element={<Backtest />} />
+            <Route path="/stock-fetcher" element={<StockFetcher />} />
           </Routes>
         </main>
       </div>

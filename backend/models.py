@@ -4,7 +4,7 @@ Includes confidence_level tracking per rules.md 'Resonance' tier requirements.
 """
 
 from sqlalchemy import (
-    Column, Integer, String, Float, DateTime, ForeignKey, Text, JSON, Enum
+    Column, Integer, String, Float, DateTime, ForeignKey, Text, JSON, Enum, Boolean
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -114,3 +114,15 @@ class BacktestResult(Base):
     created_at = Column(DateTime, server_default=func.now())
 
     strategy = relationship("Strategy", back_populates="backtest_results")
+
+
+class Screener(Base):
+    """Screener model for Stock Fetcher feature."""
+    __tablename__ = "screeners"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), nullable=False)
+    scan_clause = Column(Text, nullable=False)
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, onupdate=func.now())

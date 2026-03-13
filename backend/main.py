@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import init_db, SessionLocal
 from models import Stock
-from routers import market, portfolio, strategy
+from routers import market, portfolio, strategy, screener
 from services.market_feed import market_feed
 
 # --- App Init ---
@@ -37,6 +37,7 @@ app.add_middleware(
 app.include_router(market.router)
 app.include_router(portfolio.router)
 app.include_router(strategy.router)
+app.include_router(screener.router)
 
 
 @app.on_event("startup")

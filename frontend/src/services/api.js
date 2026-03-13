@@ -34,4 +34,11 @@ export const runBacktest = (strategyId, data) =>
   api.post(`/strategies/${strategyId}/backtest`, data).then(r => r.data);
 export const fetchBacktestResult = (id) => api.get(`/backtests/${id}`).then(r => r.data);
 
+// ── Screeners ──
+export const fetchScreeners = () => api.get('/screeners').then(r => r.data);
+export const createScreener = (data) => api.post('/screeners', data).then(r => r.data);
+export const updateScreener = (id, data) => api.put(`/screeners/${id}`, data).then(r => r.data);
+export const deleteScreener = (id) => api.delete(`/screeners/${id}`).then(r => r.data);
+
 export default api;
+

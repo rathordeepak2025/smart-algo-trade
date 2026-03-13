@@ -6,6 +6,7 @@ import {
     FlaskConical,
     BarChart3,
     Activity,
+    Search,
 } from 'lucide-react';
 import './Sidebar.css';
 
@@ -15,6 +16,7 @@ const navItems = [
     { path: '/portfolio', label: 'Portfolio', icon: Briefcase },
     { path: '/strategies', label: 'Strategies', icon: FlaskConical },
     { path: '/backtest', label: 'Backtest', icon: BarChart3 },
+    { path: '/stock-fetcher', label: 'Stock Fetcher', icon: Search },
 ];
 
 export default function Sidebar() {
