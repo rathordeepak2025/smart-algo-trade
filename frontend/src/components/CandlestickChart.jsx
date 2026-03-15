@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { createChart } from 'lightweight-charts';
+import { createChart, CandlestickSeries, HistogramSeries, LineSeries } from 'lightweight-charts';
 
 export default function CandlestickChart({ data, indicators = {}, height = 450 }) {
     const chartRef = useRef(null);
@@ -10,7 +10,10 @@ export default function CandlestickChart({ data, indicators = {}, height = 450 }
 
         // Clear previous chart
         if (chartInstance.current) {
-            chartInstance.current.remove();
+            try {
+                chartInstance.current.remove();
+            } catch (e) { /* Ignore if already disposed */ }
+            chartInstance.current = null;
         }
 
         const chart = createChart(chartRef.current, {
@@ -43,34 +46,45 @@ export default function CandlestickChart({ data, indicators = {}, height = 450 }
 
         // Candlestick series
         const timestamps = data.timestamps;
-        const candleData = timestamps.map((t, i) => ({
-            time: t,
-            open: data.ohlcv.open[i],
-            high: data.ohlcv.high[i],
-            low: data.ohlcv.low[i],
-            close: data.ohlcv.close[i],
-        }));
-
-        const candleSeries = chart.addCandlestickSeries({
-            upColor: '#10b981',
-            downColor: '#ef4444',
-            borderUpColor: '#10b981',
-            borderDownColor: '#ef4444',
-            wickUpColor: '#10b981',
-            wickDownColor: '#ef4444',
+        const candleData = timestamps.map((t, i) => {
+            // Ensure time is formatted correctly for lightweight-charts
+            const timeObj = typeof t === 'string' && t.includes('T') ? t.split('T')[0] : t;
+            return {
+                time: timeObj,
+                open: data.ohlcv.open[i],
+                high: data.ohlcv.high[i],
+                low: data.ohlcv.low[i],
+                close: data.ohlcv.close[i],
+            };
         });
-        candleSeries.setData(candleData);
+
+        // Lightweight charts now uses createChart directly, but series must be added via chart
+        let candleSeries;
+        try {
+            candleSeries = chart.addSeries(CandlestickSeries, {
+                upColor: '#10b981',
+                downColor: '#ef4444',
+                borderUpColor: '#10b981',
+                borderDownColor: '#ef4444',
+                wickUpColor: '#10b981',
+                wickDownColor: '#ef4444',
+            });
+            candleSeries.setData(candleData);
+        } catch (err) { console.error("Error drawing candlestick:", err); }
 
         // Volume histogram
-        const volumeData = timestamps.map((t, i) => ({
-            time: t,
-            value: data.ohlcv.volume[i],
-            color: data.ohlcv.close[i] >= data.ohlcv.open[i]
-                ? 'rgba(16, 185, 129, 0.2)'
-                : 'rgba(239, 68, 68, 0.2)',
-        }));
+        const volumeData = timestamps.map((t, i) => {
+            const timeObj = typeof t === 'string' && t.includes('T') ? t.split('T')[0] : t;
+            return {
+                time: timeObj,
+                value: data.ohlcv.volume[i],
+                color: data.ohlcv.close[i] >= data.ohlcv.open[i]
+                    ? 'rgba(16, 185, 129, 0.2)'
+                    : 'rgba(239, 68, 68, 0.2)',
+            };
+        });
 
-        const volumeSeries = chart.addHistogramSeries({
+        const volumeSeries = chart.addSeries(HistogramSeries, {
             priceFormat: { type: 'volume' },
             priceScaleId: 'volume',
         });
@@ -94,20 +108,25 @@ export default function CandlestickChart({ data, indicators = {}, height = 450 }
             if (!values || !overlayColors[key]) return;
 
             const lineData = timestamps
-                .map((t, i) => ({ time: t, value: values[i] }))
+                .map((t, i) => {
+                    const timeObj = typeof t === 'string' && t.includes('T') ? t.split('T')[0] : t;
+                    return { time: timeObj, value: values[i] };
+                })
                 .filter(d => d.value != null);
 
             if (lineData.length === 0) return;
 
-            const series = chart.addLineSeries({
-                color: overlayColors[key],
-                lineWidth: key.startsWith('bb_') ? 1 : 2,
-                lineStyle: key.startsWith('bb_') ? 2 : 0,
-                crosshairMarkerVisible: false,
-                priceLineVisible: false,
-                lastValueVisible: false,
-            });
-            series.setData(lineData);
+            try {
+                const series = chart.addSeries(LineSeries, {
+                    color: overlayColors[key],
+                    lineWidth: key.startsWith('bb_') ? 1 : 2,
+                    lineStyle: key.startsWith('bb_') ? 2 : 0,
+                    crosshairMarkerVisible: false,
+                    priceLineVisible: false,
+                    lastValueVisible: false,
+                });
+                series.setData(lineData);
+            } catch (e) { console.warn("Could not draw overlay", key, e); }
         });
 
         chart.timeScale().fitContent();
@@ -119,7 +138,10 @@ export default function CandlestickChart({ data, indicators = {}, height = 450 }
 
         return () => {
             window.removeEventListener('resize', handleResize);
-            chart.remove();
+            try {
+                chart.remove();
+            } catch (e) { /* ignore */ }
+            chartInstance.current = null;
         };
     }, [data, indicators, height]);
 

@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session
 import pandas as pd
 
 from database import get_db
-from models import Stock, PriceData
+from models import Stock, PriceData, ChartinkStockList
+from sqlalchemy import desc
 from services.technical_analysis import compute_indicators
 
 router = APIRouter(prefix="/api", tags=["market"])
@@ -131,3 +132,14 @@ def get_stock_indicators(
     indicators["symbol"] = symbol.upper()
     indicators["stock_name"] = stock.name
     return indicators
+
+@router.get("/chartink/screener")
+def get_latest_chartink_screener(db: Session = Depends(get_db)):
+    """Get the latest scraped stocks from Chartink."""
+    latest_gainers = db.query(ChartinkStockList).filter(ChartinkStockList.screener_name == "Top Gainers").order_by(desc(ChartinkStockList.date_scraped)).first()
+    latest_losers = db.query(ChartinkStockList).filter(ChartinkStockList.screener_name == "Top Losers").order_by(desc(ChartinkStockList.date_scraped)).first()
+    
+    return {
+        "top_gainers": latest_gainers.stocks if latest_gainers else [],
+        "top_losers": latest_losers.stocks if latest_losers else []
+    }

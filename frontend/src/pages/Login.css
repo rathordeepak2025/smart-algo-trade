@@ -1,0 +1,66 @@
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #0f172a; /* matches deep dark theme usually used for trading */
+  font-family: 'Inter', sans-serif;
+}
+
+.login-card {
+  background: #1e293b;
+  padding: 3rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-card h1 {
+  margin: 0;
+  color: #f8fafc;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.subtitle {
+  color: #94a3b8;
+  margin-top: 0.5rem;
+  margin-bottom: 2.5rem;
+  font-size: 0.9rem;
+}
+
+.upstox-btn {
+  background-color: #8b5cf6; /* Upstox-like purple/violet */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  width: 100%;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px rgba(139, 92, 246, 0.25);
+}
+
+.upstox-btn:hover {
+  background-color: #7c3aed;
+  transform: translateY(-1px);
+}
+
+.upstox-btn:disabled {
+  background-color: #64748b;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.error-msg {
+  color: #ef4444;
+  margin-top: 1.5rem;
+  font-size: 0.85rem;
+  background: rgba(239, 68, 68, 0.1);
+  padding: 8px;
+  border-radius: 6px;
+}

@@ -126,3 +126,20 @@ class Screener(Base):
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
+
+class UserSession(Base):
+    """Stores Upstox user auth session."""
+    __tablename__ = "user_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    access_token = Column(String(2000), nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+class ChartinkStockList(Base):
+    """Stores the list of stocks scraped from Chartink on a specific date for backtracking."""
+    __tablename__ = "chartink_stock_lists"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date_scraped = Column(DateTime, server_default=func.now(), index=True)
+    screener_name = Column(String(100), nullable=False) # e.g. "Top Gainers"
+    stocks = Column(JSON, nullable=False) # List of stock symbols

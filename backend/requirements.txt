@@ -6,4 +6,9 @@ numpy
 ta
 websockets
 pydantic
-aiofilespip
+aiofiles
+pip
+requests
+beautifulsoup4
+python-dotenv
+upstox-python-sdk

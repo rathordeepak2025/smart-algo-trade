@@ -2,17 +2,26 @@ import { useState, useEffect, useCallback } from 'react';
 import { fetchStocks } from '../services/api';
 import marketWS from '../services/websocket';
 import MarketTable from '../components/MarketTable';
+import axios from 'axios';
 
 export default function Market() {
     const [stocks, setStocks] = useState([]);
+    const [chartinkData, setChartinkData] = useState({ top_gainers: [], top_losers: [] });
     const [liveData, setLiveData] = useState({});
     const [filter, setFilter] = useState('ALL');
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetchStocks()
-            .then(s => { setStocks(s); setLoading(false); })
+        Promise.all([
+            fetchStocks(),
+            axios.get('http://localhost:8000/api/chartink/screener').then(res => res.data).catch(() => ({ top_gainers: [], top_losers: [] }))
+        ])
+            .then(([s, cData]) => {
+                setStocks(s);
+                setChartinkData(cData);
+                setLoading(false);
+            })
             .catch(() => setLoading(false));
     }, []);
 
@@ -28,7 +37,9 @@ export default function Market() {
     }, [handleLiveData]);
 
     const filtered = stocks.filter(s => {
-        if (filter !== 'ALL' && s.exchange !== filter) return false;
+        if (filter === 'CHARTINK_GAINERS' && !chartinkData.top_gainers.includes(s.symbol)) return false;
+        if (filter === 'CHARTINK_LOSERS' && !chartinkData.top_losers.includes(s.symbol)) return false;
+        if (['NSE', 'BSE'].includes(filter) && s.exchange !== filter) return false;
         if (search && !s.symbol.toLowerCase().includes(search.toLowerCase()) &&
             !s.name.toLowerCase().includes(search.toLowerCase())) return false;
         return true;
@@ -54,13 +65,14 @@ export default function Market() {
                     style={{ maxWidth: 280 }}
                 />
                 <div style={{ display: 'flex', gap: 6 }}>
-                    {['ALL', 'NSE', 'BSE'].map(f => (
+                    {[{ id: 'ALL', label: 'ALL' }, { id: 'NSE', label: 'NSE' }, { id: 'BSE', label: 'BSE' }, { id: 'CHARTINK_GAINERS', label: 'Chartink Gainers' }, { id: 'CHARTINK_LOSERS', label: 'Chartink Losers' }].map(f => (
                         <button
-                            key={f}
-                            className={`btn btn-sm ${filter === f ? 'btn-primary' : 'btn-secondary'}`}
-                            onClick={() => setFilter(f)}
+                            key={f.id}
+                            className={`btn btn-sm ${filter === f.id ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setFilter(f.id)}
+                            style={f.id.includes('CHARTINK') ? { backgroundColor: filter === f.id ? '#8b5cf6' : '#1e293b', borderColor: '#8b5cf6' } : {}}
                         >
-                            {f}
+                            {f.label}
                         </button>
                     ))}
                 </div>

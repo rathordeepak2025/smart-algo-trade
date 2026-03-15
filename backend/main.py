@@ -14,8 +14,9 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import init_db, SessionLocal
 from models import Stock
-from routers import market, portfolio, strategy, screener
+from routers import market, portfolio, strategy, screener, auth
 from services.market_feed import market_feed
+from services.chartink_scraper import scrape_and_store
 
 # --- App Init ---
 app = FastAPI(
@@ -38,7 +39,7 @@ app.include_router(market.router)
 app.include_router(portfolio.router)
 app.include_router(strategy.router)
 app.include_router(screener.router)
-
+app.include_router(auth.router)
 
 @app.on_event("startup")
 async def startup():
@@ -48,6 +49,9 @@ async def startup():
     # Initialize market feed with current stock prices
     db = SessionLocal()
     try:
+        # Run the chartink scraper once on startup
+        scrape_and_store(db)
+
         stocks = db.query(Stock).all()
         prices = {s.symbol: s.current_price for s in stocks if s.current_price}
         if prices:

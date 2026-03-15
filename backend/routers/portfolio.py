@@ -8,7 +8,8 @@ from pydantic import BaseModel
 from typing import Optional, List
 
 from database import get_db
-from models import Portfolio, PortfolioHolding, Stock
+from models import Portfolio, PortfolioHolding, Stock, UserSession
+import requests
 
 router = APIRouter(prefix="/api", tags=["portfolio"])
 
@@ -33,7 +34,47 @@ class HoldingAdd(BaseModel):
     avg_buy_price: float
 
 
-# --- Endpoints ---
+# --- Upstox Integration Endpoints ---
+
+@router.get("/upstox/holdings")
+def get_upstox_holdings(db: Session = Depends(get_db)):
+    """Fetch real holdings from Upstox using stored access token"""
+    session = db.query(UserSession).first()
+    if not session or not session.access_token:
+        raise HTTPException(status_code=401, detail="Not authenticated with Upstox")
+        
+    headers = {
+        'Authorization': f'Bearer {session.access_token}',
+        'Accept': 'application/json'
+    }
+    try:
+        url = "https://api.upstox.com/v2/portfolio/long-term-holdings"
+        resp = requests.get(url, headers=headers)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/upstox/positions")
+def get_upstox_positions(db: Session = Depends(get_db)):
+    """Fetch real positions from Upstox using stored access token"""
+    session = db.query(UserSession).first()
+    if not session or not session.access_token:
+        raise HTTPException(status_code=401, detail="Not authenticated with Upstox")
+        
+    headers = {
+        'Authorization': f'Bearer {session.access_token}',
+        'Accept': 'application/json'
+    }
+    try:
+        url = "https://api.upstox.com/v2/portfolio/short-term-positions"
+        resp = requests.get(url, headers=headers)
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- Local Portfolio Endpoints ---
 
 @router.get("/portfolios")
 def list_portfolios(db: Session = Depends(get_db)):

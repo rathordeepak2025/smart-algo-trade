@@ -4,24 +4,32 @@ import {
     TrendingUp, TrendingDown, BarChart3, Briefcase, Activity,
     IndianRupee, Zap
 } from 'lucide-react';
-import { fetchStocks, fetchPortfolios, fetchStrategies } from '../services/api';
+import { fetchStocks, fetchStrategies } from '../services/api';
 import marketWS from '../services/websocket';
+import axios from 'axios';
 import './Dashboard.css';
 
 export default function Dashboard() {
     const navigate = useNavigate();
     const [stocks, setStocks] = useState([]);
-    const [portfolios, setPortfolios] = useState([]);
+    const [holdings, setHoldings] = useState([]);
+    const [positions, setPositions] = useState([]);
     const [strategies, setStrategies] = useState([]);
     const [liveData, setLiveData] = useState({});
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        Promise.all([fetchStocks(), fetchPortfolios(), fetchStrategies()])
-            .then(([s, p, st]) => {
+        Promise.all([
+            fetchStocks(),
+            fetchStrategies(),
+            axios.get('http://localhost:8000/api/upstox/holdings').then(res => res.data?.data || []).catch(err => { console.error(err); return []; }),
+            axios.get('http://localhost:8000/api/upstox/positions').then(res => res.data?.data || []).catch(err => { console.error(err); return []; })
+        ])
+            .then(([s, st, h, p]) => {
                 setStocks(s);
-                setPortfolios(p);
                 setStrategies(st);
+                setHoldings(h);
+                setPositions(p);
                 setLoading(false);
             })
             .catch(err => {
@@ -45,9 +53,10 @@ export default function Dashboard() {
         return <div className="loading"><div className="loading-spinner" /></div>;
     }
 
-    // Calculate overview stats
-    const totalInvested = portfolios.reduce((s, p) => s + p.total_invested, 0);
-    const totalValue = portfolios.reduce((s, p) => s + p.current_value, 0);
+    // Calculate overview stats from Upstox data
+    // Upstox holdings have fields like: average_price, quantity, instrument_token
+    const totalInvested = holdings.reduce((sum, h) => sum + ((h.average_price || 0) * (h.quantity || 0)), 0);
+    const totalValue = holdings.reduce((sum, h) => sum + ((h.last_price || h.average_price || 0) * (h.quantity || 0)), 0);
     const totalPnl = totalValue - totalInvested;
     const totalPnlPct = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : 0;
 
@@ -79,7 +88,7 @@ export default function Dashboard() {
                         ₹{totalInvested.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                     </div>
                     <div className="stat-change" style={{ color: 'var(--text-muted)' }}>
-                        {portfolios.length} portfolio(s)
+                        {holdings.length} Holdings | {positions.length} Positions
                     </div>
                 </div>
 
