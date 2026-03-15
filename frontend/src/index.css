@@ -424,6 +424,10 @@ select {
   animation: pulse-green 2s infinite;
 }
 
+.pulse-dot.closed {
+  background: var(--red);
+}
+
 /* --- Keyframe Animation: Fade In --- */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }

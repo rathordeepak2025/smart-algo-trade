@@ -59,6 +59,30 @@ def get_auth_status(db: Session = Depends(get_db)):
     """Check if the user is currently authenticated with Upstox."""
     session = db.query(UserSession).first()
     if session and session.access_token:
-        # Quick validation could be done here, for now assume token is valid if it exists
+        # Validate token against Upstox API
+        headers = {
+            'Authorization': f'Bearer {session.access_token}',
+            'Accept': 'application/json'
+        }
+        try:
+            url = "https://api.upstox.com/v2/user/profile"
+            resp = requests.get(url, headers=headers)
+            if resp.status_code == 401:
+                # Token is expired or invalid, delete it so user can login again
+                db.delete(session)
+                db.commit()
+                return {"authenticated": False}
+        except Exception:
+            pass # On network errors, assume still authenticated for now
+            
         return {"authenticated": True}
     return {"authenticated": False}
+
+@router.post("/upstox/logout")
+def logout_upstox(db: Session = Depends(get_db)):
+    """Log out the user by clearing the session from DB."""
+    session = db.query(UserSession).first()
+    if session:
+        db.delete(session)
+        db.commit()
+    return {"message": "Logged out successfully"}
