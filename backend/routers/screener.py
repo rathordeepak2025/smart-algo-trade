@@ -105,3 +105,18 @@ def delete_screener(screener_id: int, db: Session = Depends(get_db)):
     db.delete(screener)
     db.commit()
     return {"message": "Screener deleted"}
+
+from services.chartink_scraper import get_chartink_stocks
+
+@router.post("/screeners/{screener_id}/run")
+def run_screener(screener_id: int, db: Session = Depends(get_db)):
+    """Run a specific screener by fetching its scan clause and querying Chartink."""
+    screener = db.query(Screener).filter(Screener.id == screener_id).first()
+    if not screener:
+        raise HTTPException(status_code=404, detail="Screener not found")
+        
+    try:
+        stocks = get_chartink_stocks(screener.scan_clause)
+        return {"screener_id": screener.id, "stocks": stocks}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to run screener on Chartink: {e}")

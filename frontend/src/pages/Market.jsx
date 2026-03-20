@@ -1,88 +1,203 @@
-import { useState, useEffect, useCallback } from 'react';
-import { fetchStocks } from '../services/api';
-import marketWS from '../services/websocket';
-import MarketTable from '../components/MarketTable';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
+import { ArrowUpRight, ArrowDownRight, Activity, Search, Plus } from 'lucide-react';
+import './Market.css';
 
 export default function Market() {
     const [stocks, setStocks] = useState([]);
-    const [chartinkData, setChartinkData] = useState({ top_gainers: [], top_losers: [] });
-    const [liveData, setLiveData] = useState({});
-    const [filter, setFilter] = useState('ALL');
-    const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [showResults, setShowResults] = useState(false);
+    const searchRef = useRef(null);
 
+    // 1. Fetch Today's Chartink stocks on mount
     useEffect(() => {
-        Promise.all([
-            fetchStocks(),
-            axios.get('http://localhost:8000/api/chartink/screener').then(res => res.data).catch(() => ({ top_gainers: [], top_losers: [] }))
-        ])
-            .then(([s, cData]) => {
-                setStocks(s);
-                setChartinkData(cData);
+        const fetchInitialStocks = async () => {
+            setLoading(true);
+            try {
+                const res = await axios.get('http://localhost:8000/api/stocks');
+                setStocks(res.data);
+            } catch (err) {
+                console.error("Failed to fetch initial stocks", err);
+            } finally {
                 setLoading(false);
-            })
-            .catch(() => setLoading(false));
+            }
+        };
+        fetchInitialStocks();
     }, []);
 
-    const handleLiveData = useCallback((updates) => {
-        const map = {};
-        updates.forEach(u => { map[u.symbol] = u; });
-        setLiveData(prev => ({ ...prev, ...map }));
-    }, []);
+    // 2. Search functionality
+    const handleSearch = async (val) => {
+        setSearch(val);
+        if (val.length < 2) {
+            setSearchResults([]);
+            setShowResults(false);
+            return;
+        }
+        try {
+            const res = await axios.get(`http://localhost:8000/api/market/search?q=${val}`);
+            setSearchResults(res.data);
+            setShowResults(true);
+        } catch (err) {
+            console.error("Search error", err);
+        }
+    };
 
+    const addStockToTable = async (instrument) => {
+        // Prevent duplicates
+        if (stocks.find(s => s.symbol === instrument.symbol)) {
+            setSearch('');
+            setShowResults(false);
+            return;
+        }
+
+        try {
+            // Fetch live quote for the new stock
+            const quoteRes = await axios.get(`http://localhost:8000/api/market/quotes?symbols=${instrument.symbol}`);
+            const quote = quoteRes.data[instrument.symbol] || {};
+            
+            const newStock = {
+                symbol: instrument.symbol,
+                name: instrument.name,
+                exchange: 'NSE',
+                current_price: quote.current_price || 0,
+                day_change: quote.day_change || 0,
+                day_change_pct: quote.day_change_pct || 0,
+                volume: quote.volume || 0 // Assuming volume is returned
+            };
+            
+            setStocks(prev => [newStock, ...prev]);
+            setSearch('');
+            setShowResults(false);
+        } catch (err) {
+            console.error("Failed to add stock", err);
+        }
+    };
+
+    // 3. Track functionality
+    const handleTrack = async (symbol) => {
+        try {
+            await axios.post('http://localhost:8000/api/market/track', { symbol });
+            alert(`${symbol} matches current date and is now being tracked.`);
+        } catch (err) {
+            console.error("Failed to track stock", err);
+            alert("Error adding to tracking list.");
+        }
+    };
+
+    // Handle clicks outside search results
     useEffect(() => {
-        const unsub = marketWS.subscribe(handleLiveData);
-        return unsub;
-    }, [handleLiveData]);
-
-    const filtered = stocks.filter(s => {
-        if (filter === 'CHARTINK_GAINERS' && !chartinkData.top_gainers.includes(s.symbol)) return false;
-        if (filter === 'CHARTINK_LOSERS' && !chartinkData.top_losers.includes(s.symbol)) return false;
-        if (['NSE', 'BSE'].includes(filter) && s.exchange !== filter) return false;
-        if (search && !s.symbol.toLowerCase().includes(search.toLowerCase()) &&
-            !s.name.toLowerCase().includes(search.toLowerCase())) return false;
-        return true;
-    });
-
-    if (loading) {
-        return <div className="loading"><div className="loading-spinner" /></div>;
-    }
+        const handleClickOutside = (event) => {
+            if (searchRef.current && !searchRef.current.contains(event.target)) {
+                setShowResults(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     return (
-        <div className="fade-in">
+        <div className="fade-in market-page">
             <div className="page-header">
-                <h1>Market</h1>
-                <p>Real-time NSE & BSE stock prices</p>
-            </div>
-
-            <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-                <input
-                    type="text"
-                    placeholder="Search stocks..."
-                    value={search}
-                    onChange={e => setSearch(e.target.value)}
-                    style={{ maxWidth: 280 }}
-                />
-                <div style={{ display: 'flex', gap: 6 }}>
-                    {[{ id: 'ALL', label: 'ALL' }, { id: 'NSE', label: 'NSE' }, { id: 'BSE', label: 'BSE' }, { id: 'CHARTINK_GAINERS', label: 'Chartink Gainers' }, { id: 'CHARTINK_LOSERS', label: 'Chartink Losers' }].map(f => (
-                        <button
-                            key={f.id}
-                            className={`btn btn-sm ${filter === f.id ? 'btn-primary' : 'btn-secondary'}`}
-                            onClick={() => setFilter(f.id)}
-                            style={f.id.includes('CHARTINK') ? { backgroundColor: filter === f.id ? '#8b5cf6' : '#1e293b', borderColor: '#8b5cf6' } : {}}
-                        >
-                            {f.label}
-                        </button>
-                    ))}
+                <div className="header-icon">
+                    <Activity size={32} color="var(--primary)" />
                 </div>
-                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className="pulse-dot live"></span>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--green)' }}>Live</span>
+                <div>
+                    <h1>Market</h1>
+                    <p>Real-time data for today's screened instruments</p>
                 </div>
             </div>
 
-            <MarketTable stocks={filtered} liveData={liveData} />
+            {/* Search Box */}
+            <div className="search-container" ref={searchRef} style={{ position: 'relative', marginBottom: 24 }}>
+                <div className="search-input-wrapper">
+                    <Search className="search-icon" size={18} />
+                    <input
+                        type="text"
+                        placeholder="Search & Add Stocks (e.g. RELIANCE)..."
+                        value={search}
+                        onChange={(e) => handleSearch(e.target.value)}
+                        className="search-input"
+                    />
+                </div>
+                {showResults && searchResults.length > 0 && (
+                    <div className="search-results-dropdown shadow-lg">
+                        {searchResults.map(res => (
+                            <div 
+                                key={res.instrument_key} 
+                                className="search-result-item"
+                                onClick={() => addStockToTable(res)}
+                            >
+                                <span className="res-symbol">{res.symbol}</span>
+                                <span className="res-name">{res.name}</span>
+                                <Plus size={14} className="add-icon" />
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {loading ? (
+                <div className="loading-state">
+                    <div className="loading-spinner" />
+                    <p>Fetching today's screened stocks...</p>
+                </div>
+            ) : stocks.length === 0 ? (
+                <div className="empty-state">
+                    <p>No stocks found for today's run. Try searching for a stock above.</p>
+                </div>
+            ) : (
+                <div className="card table-container">
+                    <table className="market-table">
+                        <thead>
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Name</th>
+                                <th>Exchange</th>
+                                <th style={{ textAlign: 'right' }}>Price</th>
+                                <th style={{ textAlign: 'right' }}>Change</th>
+                                <th style={{ textAlign: 'right' }}>Change %</th>
+                                <th style={{ textAlign: 'right' }}>Volume</th>
+                                <th style={{ textAlign: 'center' }}>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {stocks.map(stock => {
+                                const isUp = stock.day_change >= 0;
+                                return (
+                                    <tr key={stock.symbol}>
+                                        <td><span className="symbol-badge">{stock.symbol}</span></td>
+                                        <td className="stock-name">{stock.name}</td>
+                                        <td><span className="badge badge-blue">NSE</span></td>
+                                        <td style={{ textAlign: 'right', fontWeight: 600 }}>₹{stock.current_price?.toFixed(2)}</td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <span className={isUp ? 'positive' : 'negative'}>
+                                                {isUp ? '+' : ''}{stock.day_change?.toFixed(2)}
+                                            </span>
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <span className={`change-badge ${isUp ? 'up' : 'down'}`}>
+                                                {isUp ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                                                {Math.abs(stock.day_change_pct || 0).toFixed(2)}%
+                                            </span>
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>{stock.volume?.toLocaleString()}</td>
+                                        <td style={{ textAlign: 'center' }}>
+                                            <button 
+                                                className="btn btn-sm btn-primary track-btn"
+                                                onClick={() => handleTrack(stock.symbol)}
+                                            >
+                                                Track
+                                            </button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            )}
         </div>
     );
 }

@@ -135,6 +135,15 @@ class UserSession(Base):
     access_token = Column(String(2000), nullable=False)
     created_at = Column(DateTime, server_default=func.now())
 
+class TrackedStock(Base):
+    """Stocks actively tracked for live strategy signals."""
+    __tablename__ = "tracked_stocks"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    symbol = Column(String(20), unique=True, nullable=False, index=True)
+    is_active = Column(Boolean, default=True, nullable=False)
+    added_at = Column(DateTime, server_default=func.now())
+
 class ChartinkStockList(Base):
     """Stores the list of stocks scraped from Chartink on a specific date for backtracking."""
     __tablename__ = "chartink_stock_lists"

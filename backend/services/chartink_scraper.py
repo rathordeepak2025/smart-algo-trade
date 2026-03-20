@@ -1,7 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from sqlalchemy.orm import Session
-from models import ChartinkStockList
+from models import ChartinkStockList, Screener
 
 CHARTINK_URL = "https://chartink.com/screener/"
 CHARTINK_PROCESS_URL = "https://chartink.com/screener/process"
@@ -37,25 +37,41 @@ def get_chartink_stocks(scan_clause: str):
 
 def scrape_and_store(db: Session):
     """
-    Scrape Top Gainers / Losers and store in DB for the day.
+    Fetch all active screeners from the database, run their clauses on Chartink,
+    and store the results in the ChartinkStockList table.
     """
     try:
-        # Example clauses that Chartink interprets
-        top_gainers_clause = "( {33489} ( latest close > latest open and latest volume > 100000 ) ) "
-        gainers = get_chartink_stocks(top_gainers_clause)
+        # Fetch all active screeners from the database
+        active_screeners = db.query(Screener).filter(Screener.is_active == True).all()
         
-        if gainers:
-            record = ChartinkStockList(screener_name="Top Gainers", stocks=gainers)
-            db.add(record)
-        
-        top_losers_clause = "( {33489} ( latest close < latest open and latest volume > 100000 ) ) "
-        losers = get_chartink_stocks(top_losers_clause)
-        
-        if losers:
-            record2 = ChartinkStockList(screener_name="Top Losers", stocks=losers)
-            db.add(record2)
+        if not active_screeners:
+            print("No active screeners found in the database.")
+            return
+
+        total_scraped = 0
+        from datetime import datetime, date
+        today_start = datetime.combine(date.today(), datetime.min.time())
+
+        for screener in active_screeners:
+            print(f"Running screener: {screener.name}")
+            stocks = get_chartink_stocks(screener.scan_clause)
+            
+            if stocks:
+                # Clear existing entries for this screener today to prevent accumulation
+                db.query(ChartinkStockList).filter(
+                    ChartinkStockList.screener_name == screener.name,
+                    ChartinkStockList.date_scraped >= today_start
+                ).delete()
+
+                record = ChartinkStockList(screener_name=screener.name, stocks=stocks)
+                db.add(record)
+                total_scraped += 1
+                print(f"  [OK] Scraped {len(stocks)} stocks for '{screener.name}'")
+            else:
+                print(f"  [WARN] No stocks found for '{screener.name}'")
         
         db.commit()
-        print(f"Chartink Scraping Successful: {len(gainers)} gainers, {len(losers)} losers.")
+        print(f"Chartink Scraping Finished. Processed {total_scraped} screeners.")
     except Exception as e:
-        print(f"Error scraping Chartink: {e}")
+        db.rollback()
+        print(f"Error scraping Chartink screeners: {e}")

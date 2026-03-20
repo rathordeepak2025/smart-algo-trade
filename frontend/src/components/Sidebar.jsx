@@ -9,6 +9,7 @@ import {
     BarChart3,
     Activity,
     Search,
+    Compass,
     LogOut,
 } from 'lucide-react';
 import './Sidebar.css';
@@ -16,6 +17,7 @@ import './Sidebar.css';
 const navItems = [
     { path: '/', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/market', label: 'Market', icon: TrendingUp },
+    { path: '/tracking', label: 'Tracking Instrument', icon: Compass },
     { path: '/portfolio', label: 'Portfolio', icon: Briefcase },
     { path: '/strategies', label: 'Strategies', icon: FlaskConical },
     { path: '/backtest', label: 'Backtest', icon: BarChart3 },

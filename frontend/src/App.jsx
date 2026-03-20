@@ -9,6 +9,7 @@ import Portfolio from './pages/Portfolio';
 import Strategies from './pages/Strategies';
 import Backtest from './pages/Backtest';
 import StockFetcher from './pages/StockFetcher';
+import TrackingInstrument from './pages/TrackingInstrument';
 import Login from './pages/Login';
 import AuthCallback from './pages/AuthCallback';
 import './index.css';
@@ -55,6 +56,7 @@ export default function App() {
                   <Route path="/strategies" element={<Strategies />} />
                   <Route path="/backtest" element={<Backtest />} />
                   <Route path="/stock-fetcher" element={<StockFetcher />} />
+                  <Route path="/tracking" element={<TrackingInstrument />} />
                 </Routes>
               </main>
             </div>
