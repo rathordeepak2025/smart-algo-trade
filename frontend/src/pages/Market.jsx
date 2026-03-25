@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { ArrowUpRight, ArrowDownRight, Activity, Search, Plus } from 'lucide-react';
 import './Market.css';
@@ -9,23 +10,37 @@ export default function Market() {
     const [search, setSearch] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [showResults, setShowResults] = useState(false);
+    const [lastRefreshed, setLastRefreshed] = useState(null);
     const searchRef = useRef(null);
 
-    // 1. Fetch Today's Chartink stocks on mount
-    useEffect(() => {
-        const fetchInitialStocks = async () => {
-            setLoading(true);
-            try {
-                const res = await axios.get('http://localhost:8000/api/stocks');
-                setStocks(res.data);
-            } catch (err) {
-                console.error("Failed to fetch initial stocks", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchInitialStocks();
+    // 1. Fetch Today's Chartink stocks
+    const fetchInitialStocks = useCallback(async (isAutoRefresh = false) => {
+        if (!isAutoRefresh) setLoading(true);
+        try {
+            const res = await axios.get('http://localhost:8000/api/stocks');
+            // Sort by volume descending
+            const sortedData = [...res.data].sort((a, b) => (b.volume || 0) - (a.volume || 0));
+            setStocks(sortedData);
+            setLastRefreshed(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        } catch (err) {
+            console.error("Failed to fetch initial stocks", err);
+        } finally {
+            if (!isAutoRefresh) setLoading(false);
+        }
     }, []);
+
+    useEffect(() => {
+        fetchInitialStocks();
+    }, [fetchInitialStocks]);
+
+    // 1b. 15-minute refresh interval
+    useEffect(() => {
+        const interval = setInterval(() => {
+            console.log("Auto-refreshing screener data...");
+            fetchInitialStocks(true);
+        }, 15 * 60 * 1000);
+        return () => clearInterval(interval);
+    }, [fetchInitialStocks]);
 
     // 2. Search functionality
     const handleSearch = async (val) => {
@@ -56,7 +71,7 @@ export default function Market() {
             // Fetch live quote for the new stock
             const quoteRes = await axios.get(`http://localhost:8000/api/market/quotes?symbols=${instrument.symbol}`);
             const quote = quoteRes.data[instrument.symbol] || {};
-            
+
             const newStock = {
                 symbol: instrument.symbol,
                 name: instrument.name,
@@ -64,10 +79,13 @@ export default function Market() {
                 current_price: quote.current_price || 0,
                 day_change: quote.day_change || 0,
                 day_change_pct: quote.day_change_pct || 0,
-                volume: quote.volume || 0 // Assuming volume is returned
+                volume: quote.volume || 0
             };
-            
-            setStocks(prev => [newStock, ...prev]);
+
+            setStocks(prev => {
+                const updated = [...prev, newStock];
+                return updated.sort((a, b) => (b.volume || 0) - (a.volume || 0));
+            });
             setSearch('');
             setShowResults(false);
         } catch (err) {
@@ -105,7 +123,10 @@ export default function Market() {
                 </div>
                 <div>
                     <h1>Market</h1>
-                    <p>Real-time data for today's screened instruments</p>
+                    <p>
+                        Real-time data for today's screened instruments
+                        {lastRefreshed && <span className="refresh-time"> (Last refreshed: {lastRefreshed})</span>}
+                    </p>
                 </div>
             </div>
 
@@ -124,8 +145,8 @@ export default function Market() {
                 {showResults && searchResults.length > 0 && (
                     <div className="search-results-dropdown shadow-lg">
                         {searchResults.map(res => (
-                            <div 
-                                key={res.instrument_key} 
+                            <div
+                                key={res.instrument_key}
                                 className="search-result-item"
                                 onClick={() => addStockToTable(res)}
                             >
@@ -167,7 +188,11 @@ export default function Market() {
                                 const isUp = stock.day_change >= 0;
                                 return (
                                     <tr key={stock.symbol}>
-                                        <td><span className="symbol-badge">{stock.symbol}</span></td>
+                                        <td>
+                                            <Link to={`/stock/${stock.symbol}`} className="symbol-link">
+                                                <span className="symbol-badge">{stock.symbol}</span>
+                                            </Link>
+                                        </td>
                                         <td className="stock-name">{stock.name}</td>
                                         <td><span className="badge badge-blue">NSE</span></td>
                                         <td style={{ textAlign: 'right', fontWeight: 600 }}>₹{stock.current_price?.toFixed(2)}</td>
@@ -184,7 +209,7 @@ export default function Market() {
                                         </td>
                                         <td style={{ textAlign: 'right' }}>{stock.volume?.toLocaleString()}</td>
                                         <td style={{ textAlign: 'center' }}>
-                                            <button 
+                                            <button
                                                 className="btn btn-sm btn-primary track-btn"
                                                 onClick={() => handleTrack(stock.symbol)}
                                             >

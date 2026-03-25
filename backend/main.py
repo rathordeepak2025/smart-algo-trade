@@ -41,6 +41,19 @@ app.include_router(strategy.router)
 app.include_router(screener.router)
 app.include_router(auth.router)
 
+async def periodic_scraper():
+    """Background task to refresh screener data every 15 minutes."""
+    while True:
+        await asyncio.sleep(15 * 60) # 15 minutes
+        print("Starting periodic Chartink scrape...")
+        db = SessionLocal()
+        try:
+            scrape_and_store(db)
+        except Exception as e:
+            print(f"Periodic scrape failed: {e}")
+        finally:
+            db.close()
+
 @app.on_event("startup")
 async def startup():
     """Initialize database and start market feed simulator."""
@@ -57,6 +70,9 @@ async def startup():
         if prices:
             market_feed.initialize_prices(prices)
             asyncio.create_task(market_feed.start())
+        
+        # Start the periodic scraper
+        asyncio.create_task(periodic_scraper())
     finally:
         db.close()
 

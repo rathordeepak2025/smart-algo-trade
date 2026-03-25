@@ -105,6 +105,28 @@
     font-size: 0.85rem;
 }
 
+.refresh-time {
+    font-size: 0.85rem;
+    color: var(--primary);
+    font-weight: 500;
+    margin-left: 4px;
+    opacity: 0.8;
+}
+
+.symbol-link {
+    text-decoration: none;
+    display: inline-block;
+    transition: transform 0.2s;
+}
+
+.symbol-link:hover {
+    transform: scale(1.05);
+}
+
+.symbol-link .symbol-badge {
+    cursor: pointer;
+}
+
 .loading-state {
     display: flex;
     flex-direction: column;
